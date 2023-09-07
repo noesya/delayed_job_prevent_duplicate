@@ -6,7 +6,7 @@ And then when creating a new job we look in the "pending" jobs if there is anoth
 
 ## Note
 
-This gem is based based on the [synth](synth) work: (https://gist.github.com/synth/fba7baeffd083a931184)
+This gem is based based on the [synth](https://github.com/synth) work: https://gist.github.com/synth/fba7baeffd083a931184
 
 ## Installation
 
@@ -41,6 +41,6 @@ The gem is available as open source under the terms of the [MIT License](https:/
 
 ## Bibliography
 
-(https://groups.google.com/g/delayed_job/c/gZ9bFCdZrsk#2a05c39a192e630c)
-(https://github.com/collectiveidea/delayed_job/blob/master/lib/delayed/backend/base.rb)
-(https://github.com/ignatiusreza/activejob-trackable)
+https://groups.google.com/g/delayed_job/c/gZ9bFCdZrsk#2a05c39a192e630c
+https://github.com/collectiveidea/delayed_job/blob/master/lib/delayed/backend/base.rb
+https://github.com/ignatiusreza/activejob-trackable
