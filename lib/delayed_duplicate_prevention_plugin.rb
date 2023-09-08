@@ -15,21 +15,52 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
     private
 
     def add_signature
-      self.signature = generate_signature
-      self.args = self.payload_object.args
+      # If signature fails, id will keep everything working (though deduplication will not work)
+      self.signature = generate_signature || id
+      self.args = get_args
     end
 
     def generate_signature
-      pobj = payload_object
-      if pobj.object.respond_to?(:id) and pobj.object.id.present?
-        sig = "#{pobj.object.class}"
-        sig += ":#{pobj.object.id}"
-      else
-        sig = "#{pobj.object}"
+      begin
+        if payload_object.is_a?(Delayed::PerformableMethod)
+          generate_signature_for_performable_method
+        elsif payload_object.is_a?(ActiveJob::QueueAdapters::DelayedJobAdapter::JobWrapper)
+          generate_signature_for_job_wrapper
+        else
+          generate_signature_failed
+        end
+      rescue
+        generate_signature_failed
       end
+    end
 
-      sig += "##{pobj.method_name}"
-      return sig
+    # Methods tagged with handle_asynchronously
+    def generate_signature_for_performable_method
+      if payload_object.object.respond_to?(:id) and payload_object.object.id.present?
+        sig = "#{payload_object.object.class}:#{payload_object.object.id}"
+      else
+        sig = "#{payload_object.object}"
+      end
+      sig += "##{payload_object.method_name}"
+      sig
+    end
+
+    # Regular Job
+    def generate_signature_for_job_wrapper
+      sig = "#{payload_object.job_data["job_class"]}"
+      payload_object.job_data["arguments"].each do |job_arg|
+        string_job_arg = job_arg.is_a?(String) ? job_arg : job_arg.to_json
+      end
+      sig += "#{payload_object.job_data["job_class"]}"
+      sig
+    end
+
+    def generate_signature_failed
+      puts "DelayedDuplicatePreventionPlugin could not generate the signature correctly."
+    end
+
+    def get_args
+      self.payload_object.respond_to?(:args) ? self.payload_object.args : []
     end
 
     def prevent_duplicate
@@ -52,6 +83,7 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
     end
 
     def duplicate?
+      return false unless payload_object.respond_to?(:args)
       possible_dupes.any? { |possible_dupe| args_match?(possible_dupe, job) }
     end
 
