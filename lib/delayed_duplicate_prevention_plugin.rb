@@ -16,7 +16,7 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
 
     def add_signature
       # If signature fails, id will keep everything working (though deduplication will not work)
-      self.signature = generate_signature || id
+      self.signature = generate_signature || generate_signature_random
       self.args = get_args
     end
 
@@ -24,10 +24,8 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
       begin
         if payload_object.is_a?(Delayed::PerformableMethod)
           generate_signature_for_performable_method
-        elsif payload_object.is_a?(ActiveJob::QueueAdapters::DelayedJobAdapter::JobWrapper)
-          generate_signature_for_job_wrapper
         else
-          generate_signature_failed
+          generate_signature_random
         end
       rescue
         generate_signature_failed
@@ -45,14 +43,18 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
       sig
     end
 
-    # Regular Job
-    def generate_signature_for_job_wrapper
-      sig = "#{payload_object.job_data["job_class"]}"
-      payload_object.job_data["arguments"].each do |job_arg|
-        string_job_arg = job_arg.is_a?(String) ? job_arg : job_arg.to_json
-      end
-      sig += "#{payload_object.job_data["job_class"]}"
-      sig
+    # # Regular Job
+    # def generate_signature_for_job_wrapper
+    #   sig = "#{payload_object.job_data["job_class"]}"
+    #   payload_object.job_data["arguments"].each do |job_arg|
+    #     string_job_arg = job_arg.is_a?(String) ? job_arg : job_arg.to_json
+    #   end
+    #   sig += "#{payload_object.job_data["job_class"]}"
+    #   sig
+    # end
+
+    def generate_signature_random
+      SecureRandom.uuid
     end
 
     def generate_signature_failed
@@ -83,7 +85,6 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
     end
 
     def duplicate?
-      return false unless payload_object.respond_to?(:args)
       possible_dupes.any? { |possible_dupe| args_match?(possible_dupe, job) }
     end
 
@@ -93,11 +94,14 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
       possible_dupes = Delayed::Job.where(attempts: 0, locked_at: nil)  # Only jobs not started, otherwise it would never compute a real change if the job is currently running
                                    .where(signature: job.signature)     # Same signature
       possible_dupes = possible_dupes.where.not(id: job.id) if job.id.present?
+      byebug
       possible_dupes
     end
 
     def args_match?(job1, job2)
       job1.payload_object.args == job2.payload_object.args
+    rescue
+      false
     end
   end
 end
