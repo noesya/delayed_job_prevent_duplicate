@@ -94,7 +94,6 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
       possible_dupes = Delayed::Job.where(attempts: 0, locked_at: nil)  # Only jobs not started, otherwise it would never compute a real change if the job is currently running
                                    .where(signature: job.signature)     # Same signature
       possible_dupes = possible_dupes.where.not(id: job.id) if job.id.present?
-      byebug
       possible_dupes
     end
 
