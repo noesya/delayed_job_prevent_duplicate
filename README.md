@@ -6,7 +6,7 @@ And then when creating a new job we look in the "pending" jobs if there is anoth
 
 ## Note
 
-This gem is based based on the [synth](https://github.com/synth) work: https://gist.github.com/synth/fba7baeffd083a931184
+This gem is based on the [synth](https://github.com/synth) work: https://gist.github.com/synth/fba7baeffd083a931184
 
 ## Installation
 
