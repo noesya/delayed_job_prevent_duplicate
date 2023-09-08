@@ -23,19 +23,19 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
       pobj = payload_object
       if pobj.object.respond_to?(:id) and pobj.object.id.present?
         sig = "#{pobj.object.class}"
-        sig += ":#{pobj.object.id}" 
+        sig += ":#{pobj.object.id}"
       else
         sig = "#{pobj.object}"
       end
 
       sig += "##{pobj.method_name}"
       return sig
-    end    
+    end
 
     def prevent_duplicate
       if DuplicateChecker.duplicate?(self)
         Rails.logger.warn "Found duplicate job(#{self.signature}), ignoring..."
-        errors.add(:base, "This is a duplicate") 
+        errors.add(:base, "This is a duplicate")
       end
     end
   end
@@ -65,12 +65,7 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
     end
 
     def args_match?(job1, job2)
-      # TODO: make this logic robust
-      normalize_args(job1.args) == normalize_args(job2.args)
-    end
-
-    def normalize_args(args)
-      args.kind_of?(String) ? YAML.load(args) : args
+      job1.payload_object.args == job2.payload_object.args
     end
   end
 end
