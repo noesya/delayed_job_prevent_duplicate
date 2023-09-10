@@ -5,7 +5,7 @@ require_relative "lib/delayed_job_prevent_duplicate/version"
 Gem::Specification.new do |spec|
   spec.name          = "delayed_job_prevent_duplicate"
   spec.version       = DelayedJobPreventDuplicate::VERSION
-  spec.authors       = ["pabois"]
+  spec.authors       = ["pabois", "arnaudlevy", "SebouChu"]
   spec.email         = ["pierreandre.boissinot@noesya.coop"]
 
   spec.summary       = "Prevent delayed_job to enqueue a task already enqueued"
