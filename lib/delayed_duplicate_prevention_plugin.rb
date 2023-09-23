@@ -34,12 +34,20 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
 
     # Methods tagged with handle_asynchronously
     def generate_signature_for_performable_method
-      if payload_object.object.respond_to?(:id) and payload_object.object.id.present?
-        sig = "#{payload_object.object.class}:#{payload_object.object.id}"
+      if payload_object.object.respond_to?(:signature)
+        if payload_object.object.method(:signature).arity > 0
+          sig = payload_object.object.signature(payload_object.method_name, payload_object.args)
+        else
+          sig = payload_object.object.signature
+        end
       else
-        sig = "#{payload_object.object}"
+        if payload_object.object.respond_to?(:id) and payload_object.object.id.present?
+          sig = "#{payload_object.object.class}:#{payload_object.object.id}"
+        else
+          sig = "#{payload_object.object}"
+        end
+        sig += "##{payload_object.method_name}"
       end
-      sig += "##{payload_object.method_name}"
       sig
     end
 
