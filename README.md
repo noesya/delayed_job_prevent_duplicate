@@ -1,5 +1,7 @@
 # DelayedJobPreventDuplicate
 
+[![Maintainability](https://api.codeclimate.com/v1/badges/a7d6801105cc0df16e37/maintainability)](https://codeclimate.com/github/noesya/delayed_job_prevent_duplicate/maintainability)
+
 The purpose of this gem is to prevent to re-enqueue on DelayedJob a task already enqueued.  
 So we set a "signature" attached to every task enqueued which is a composite from the class and the id of the object, and the method called.  
 And then when creating a new job we look in the "pending" jobs if there is another one with the same signature (not in the "working" one because a task can be executed and yet you want to re-excute it because of any change). 
