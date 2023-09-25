@@ -1,4 +1,4 @@
-# DelayedJobPreventDuplicate
+# Delayed Job Prevent Duplicate
 
 [![Maintainability](https://api.codeclimate.com/v1/badges/a7d6801105cc0df16e37/maintainability)](https://codeclimate.com/github/noesya/delayed_job_prevent_duplicate/maintainability)
 
@@ -8,7 +8,7 @@ And then when creating a new job we look in the "pending" jobs if there is anoth
 
 ## Note
 
-This gem is based on the [synth](https://github.com/synth) work: https://gist.github.com/synth/fba7baeffd083a931184
+This gem is based on the work of [synth](https://github.com/synth): https://gist.github.com/synth/fba7baeffd083a931184
 
 ## Installation
 
