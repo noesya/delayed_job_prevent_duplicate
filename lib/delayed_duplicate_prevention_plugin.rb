@@ -22,8 +22,8 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
 
     def generate_signature
       begin
-        if payload_object.is_a?(Delayed::PerformableMethod)
-          generate_signature_for_performable_method
+        if payload_object.respond_to?(:signature) || payload_object.is_a?(Delayed::PerformableMethod)
+          generate_signature_for_job_payload
         else
           generate_signature_random
         end
@@ -33,12 +33,12 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
     end
 
     # Methods tagged with handle_asynchronously
-    def generate_signature_for_performable_method
-      if payload_object.object.respond_to?(:signature)
-        if payload_object.object.method(:signature).arity > 0
-          sig = payload_object.object.signature(payload_object.method_name, payload_object.args)
+    def generate_signature_for_job_payload
+      if payload_object.respond_to?(:signature)
+        if payload_object.method(:signature).arity > 0
+          sig = payload_object.signature(payload_object.method_name, payload_object.args)
         else
-          sig = payload_object.object.signature
+          sig = payload_object.signature
         end
       else
         if payload_object.object.respond_to?(:id) and payload_object.object.id.present?
@@ -46,7 +46,9 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
         else
           sig = "#{payload_object.object}"
         end
-        sig += "##{payload_object.method_name}"
+      end
+      if payload_object.respond_to?(:method_name)
+        sig += "##{pobj.method_name}" unless sig.match("##{pobj.method_name}")
       end
       sig
     end
