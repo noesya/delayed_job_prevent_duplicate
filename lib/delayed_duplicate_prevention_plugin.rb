@@ -49,7 +49,7 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
         end
       end
       if payload_object.respond_to?(:method_name)
-        sig += "##{pobj.method_name}" unless sig.match("##{pobj.method_name}")
+        sig += "##{payload_object.method_name}" unless sig.match("##{payload_object.method_name}")
       end
       sig
     end
