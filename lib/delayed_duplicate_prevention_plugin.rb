@@ -36,7 +36,8 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
     def generate_signature_for_job_payload
       if payload_object.respond_to?(:signature)
         if payload_object.method(:signature).arity > 0
-          sig = payload_object.signature(payload_object.method_name, payload_object.args)
+          combined_args = [payload_object.args, payload_object.kwargs]
+          sig = payload_object.signature(payload_object.method_name, combined_args)
         else
           sig = payload_object.signature
         end
@@ -48,7 +49,7 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
         end
       end
       if payload_object.respond_to?(:method_name)
-        sig += "##{pobj.method_name}" unless sig.match("##{pobj.method_name}")
+        sig += "##{payload_object.method_name}" unless sig.match("##{payload_object.method_name}")
       end
       sig
     end
