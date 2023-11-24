@@ -22,8 +22,8 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
 
     def generate_signature
       begin
-        if payload_object.is_a?(Delayed::PerformableMethod)
-          generate_signature_for_performable_method
+        if payload_object.respond_to?(:signature) || payload_object.is_a?(Delayed::PerformableMethod)
+          generate_signature_for_job_payload
         else
           generate_signature_random
         end
@@ -33,13 +33,24 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
     end
 
     # Methods tagged with handle_asynchronously
-    def generate_signature_for_performable_method
-      if payload_object.object.respond_to?(:id) and payload_object.object.id.present?
-        sig = "#{payload_object.object.class}:#{payload_object.object.id}"
+    def generate_signature_for_job_payload
+      if payload_object.respond_to?(:signature)
+        if payload_object.method(:signature).arity > 0
+          combined_args = [payload_object.args, payload_object.kwargs]
+          sig = payload_object.signature(payload_object.method_name, combined_args)
+        else
+          sig = payload_object.signature
+        end
       else
-        sig = "#{payload_object.object}"
+        if payload_object.object.respond_to?(:id) and payload_object.object.id.present?
+          sig = "#{payload_object.object.class}:#{payload_object.object.id}"
+        else
+          sig = "#{payload_object.object}"
+        end
       end
-      sig += "##{payload_object.method_name}"
+      if payload_object.respond_to?(:method_name)
+        sig += "##{payload_object.method_name}" unless sig.match("##{payload_object.method_name}")
+      end
       sig
     end
 
