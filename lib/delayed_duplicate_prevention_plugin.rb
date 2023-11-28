@@ -31,7 +31,7 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
           generate_signature_random
         end
       rescue
-        generate_signature_failed
+        log_signature_failed
       end
     end
 
@@ -80,8 +80,8 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
       SecureRandom.uuid
     end
 
-    def generate_signature_failed
-      puts "DelayedDuplicatePreventionPlugin could not generate the signature correctly."
+    def log_signature_failed
+      Rails.logger.error "DelayedDuplicatePreventionPlugin could not generate the signature correctly."
     end
 
     def get_args
