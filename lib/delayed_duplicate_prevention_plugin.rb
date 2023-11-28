@@ -41,7 +41,12 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
         obj.respond_to?(:id) ? "#{obj.class}:#{obj.id}" : obj.to_s
       end
 
-      "#{payload_object.object}##{payload_object.method_name}-#{arg_signatures}"
+      kwarg_signatures = get_kwargs.map do |(key, val)|
+        val = val.respond_to?(:id) ? "#{val.class}:#{val.id}" : val.to_s
+        [key, val]
+      end.to_h
+
+      "#{payload_object.object}##{payload_object.method_name}-#{arg_signatures}-#{kwarg_signatures}"
     end
 
     # Methods tagged with handle_asynchronously
