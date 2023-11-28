@@ -22,7 +22,10 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
 
     def generate_signature
       begin
-        if payload_object.respond_to?(:signature) || payload_object.is_a?(Delayed::PerformableMethod)
+        # NOTE: placing this block at the top since class method invocations also have Delayed::PerformableMethod as payload_object
+        if payload_object.respond_to?(:object) && payload_object.object&.is_a?(Class)
+          generate_signature_for_class_method
+        elsif payload_object.respond_to?(:signature) || payload_object.is_a?(Delayed::PerformableMethod)
           generate_signature_for_job_payload
         else
           generate_signature_random
@@ -30,6 +33,15 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
       rescue
         generate_signature_failed
       end
+    end
+
+    def generate_signature_for_class_method
+       # cast individual args to string and AR objects to class:id if any
+      arg_signatures = payload_object.args.map do |obj|
+        obj.respond_to?(:id) ? "#{obj.class}:#{obj.id}" : obj.to_s
+      end
+
+      "#{payload_object.object}##{payload_object.method_name}-#{arg_signatures}"
     end
 
     # Methods tagged with handle_asynchronously
