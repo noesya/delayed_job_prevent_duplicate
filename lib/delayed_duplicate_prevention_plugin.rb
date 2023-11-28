@@ -37,7 +37,7 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
 
     def generate_signature_for_class_method
        # cast individual args to string and AR objects to class:id if any
-      arg_signatures = payload_object.args.map do |obj|
+      arg_signatures = get_args.map do |obj|
         obj.respond_to?(:id) ? "#{obj.class}:#{obj.id}" : obj.to_s
       end
 
@@ -48,7 +48,7 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
     def generate_signature_for_job_payload
       if payload_object.respond_to?(:signature)
         if payload_object.method(:signature).arity > 0
-          combined_args = [payload_object.args, payload_object.kwargs]
+          combined_args = [get_args, get_kwargs]
           sig = payload_object.signature(payload_object.method_name, combined_args)
         else
           sig = payload_object.signature
@@ -85,7 +85,11 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
     end
 
     def get_args
-      self.payload_object.respond_to?(:args) ? self.payload_object.args : []
+      self.payload_object.try(:args) || []
+    end
+
+    def get_kwargs
+      self.payload_object.try(:kwargs) || []
     end
 
     def prevent_duplicate
@@ -121,7 +125,8 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
     end
 
     def args_match?(job1, job2)
-      job1.payload_object.args == job2.payload_object.args
+      job1.payload_object.try(:args) == job2.payload_object.try(:args) &&
+        job1.payload_object.try(:kwargs) == job2.payload_object.try(:kwargs)
     rescue
       false
     end
