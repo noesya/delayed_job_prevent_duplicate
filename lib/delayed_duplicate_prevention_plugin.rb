@@ -130,8 +130,8 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
     end
 
     def args_match?(job1, job2)
-      job1.payload_object.try(:args) == job2.payload_object.try(:args) &&
-        job1.payload_object.try(:kwargs) == job2.payload_object.try(:kwargs)
+      job1.payload_object.args == job2.payload_object.args &&
+        job1.payload_object.kwargs == job2.payload_object.kwargs
     rescue
       false
     end
