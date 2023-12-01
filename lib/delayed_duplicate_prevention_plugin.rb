@@ -22,21 +22,38 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
 
     def generate_signature
       begin
-        if payload_object.respond_to?(:signature) || payload_object.is_a?(Delayed::PerformableMethod)
+        # NOTE: placing this block at the top since class method invocations also have Delayed::PerformableMethod as payload_object
+        if payload_object.respond_to?(:object) && payload_object.object&.is_a?(Class)
+          generate_signature_for_class_method
+        elsif payload_object.respond_to?(:signature) || payload_object.is_a?(Delayed::PerformableMethod)
           generate_signature_for_job_payload
         else
           generate_signature_random
         end
       rescue
-        generate_signature_failed
+        log_signature_failed
       end
+    end
+
+    def generate_signature_for_class_method
+       # cast individual args to string and AR objects to class:id if any
+      arg_signatures = get_args.map do |obj|
+        obj.respond_to?(:id) ? "#{obj.class}:#{obj.id}" : obj.to_s
+      end
+
+      kwarg_signatures = get_kwargs.map do |(key, val)|
+        val = val.respond_to?(:id) ? "#{val.class}:#{val.id}" : val.to_s
+        [key, val]
+      end.to_h
+
+      "#{payload_object.object}##{payload_object.method_name}-#{arg_signatures}-#{kwarg_signatures}"
     end
 
     # Methods tagged with handle_asynchronously
     def generate_signature_for_job_payload
       if payload_object.respond_to?(:signature)
         if payload_object.method(:signature).arity > 0
-          combined_args = [payload_object.args, payload_object.kwargs]
+          combined_args = [get_args, get_kwargs]
           sig = payload_object.signature(payload_object.method_name, combined_args)
         else
           sig = payload_object.signature
@@ -68,12 +85,16 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
       SecureRandom.uuid
     end
 
-    def generate_signature_failed
-      puts "DelayedDuplicatePreventionPlugin could not generate the signature correctly."
+    def log_signature_failed
+      Rails.logger.error "DelayedDuplicatePreventionPlugin could not generate the signature correctly."
     end
 
     def get_args
-      self.payload_object.respond_to?(:args) ? self.payload_object.args : []
+      self.payload_object.try(:args) || []
+    end
+
+    def get_kwargs
+      self.payload_object.try(:kwargs) || []
     end
 
     def prevent_duplicate
@@ -109,7 +130,8 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
     end
 
     def args_match?(job1, job2)
-      job1.payload_object.args == job2.payload_object.args
+      job1.payload_object.args == job2.payload_object.args &&
+        job1.payload_object.kwargs == job2.payload_object.kwargs
     rescue
       false
     end
