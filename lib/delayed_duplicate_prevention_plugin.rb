@@ -23,7 +23,7 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
     def generate_signature
       begin
         # NOTE: placing this block at the top since class method invocations also have Delayed::PerformableMethod as payload_object
-        if payload_object.respond_to?(:object) && payload_object.object&.is_a?(Class)
+        if payload_object.respond_to?(:object) && payload_object.object&.is_a?(Class) && !payload_object.respond_to?(:signature)
           generate_signature_for_class_method
         elsif payload_object.respond_to?(:signature) || payload_object.is_a?(Delayed::PerformableMethod)
           generate_signature_for_job_payload
