@@ -18,6 +18,7 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
       # If signature fails, id will keep everything working (though deduplication will not work)
       self.signature = generate_signature || generate_signature_random
       self.args = get_args
+      truncate_signature_if_needed
     end
 
     def generate_signature
@@ -32,6 +33,18 @@ class DelayedDuplicatePreventionPlugin < Delayed::Plugin
         end
       rescue
         log_signature_failed
+      end
+    end
+
+    # this is to prevent ActiveRecord::ValueTooLong error for some cases with complex/long args
+    def truncate_signature_if_needed
+      return unless self.signature.present?
+
+      column_limit = self.class.columns_hash["signature"].limit
+      return unless column_limit
+
+      if self.signature.length > column_limit
+        self.signature = self.signature[0...(column_limit - 1)]
       end
     end
 
