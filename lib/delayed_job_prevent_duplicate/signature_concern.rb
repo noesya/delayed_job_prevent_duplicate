@@ -60,8 +60,9 @@ module DelayedJobPreventDuplicate
     end
 
     def serialize_arguments(arguments)
-      arguments.map { |arg|
-        arg.is_a?(ActiveRecord::Base) ? arg.to_global_id.to_s : arg.to_json
+      arguments.map { |argument|
+        argument.is_a?(ActiveRecord::Base)  ? argument.to_global_id.to_s
+                                            : argument.to_json
       }
     end
 
