@@ -9,7 +9,7 @@ module DelayedJobPreventDuplicate
     source_root File.expand_path("../../templates", __FILE__)
 
     def copy_migration
-      migration_template "migration.rb", "db/migrate/add_signature_to_delayed_job.rb"
+      migration_template "migration.rb", File.join(db_migrate_path, "add_signature_to_delayed_job.rb")
     end
 
   end
