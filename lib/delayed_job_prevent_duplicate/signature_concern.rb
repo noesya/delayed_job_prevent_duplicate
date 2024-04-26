@@ -5,61 +5,64 @@ module DelayedJobPreventDuplicate
     extend ActiveSupport::Concern
 
     included do
-      before_validation :add_signature
+      before_validation :generate_signature
       validate :prevent_duplicate
     end
 
     private
 
-    def add_signature
-      # If signature fails, id will keep everything working (though deduplication will not work)
-      self.signature = generate_signature || generate_signature_random
-      self.args = get_args
+    def generate_signature
+      self.signature = signature_from_denormalized_data || random_signature
     end
 
-    def generate_signature
+    def signature_from_denormalized_data
       begin
-        if payload_object.is_a?(Delayed::PerformableMethod)
-          generate_signature_for_performable_method
-        else
-          generate_signature_random
-        end
+        Digest::MD5.hexdigest(denormalized_data.to_json)
       rescue
-        generate_signature_failed
+        puts "DelayedJobPreventDuplicate could not generate the signature correctly."
+        nil
+      end
+    end
+
+    def self.random_signature
+      SecureRandom.uuid
+    end
+
+    def denormalized_data
+      @denormalize_data ||= begin
+        if payload_object.is_a?(Delayed::PerformableMethod)
+          denormalized_data_for_performable_method
+        else
+          denormalized_data_for_job_wrapper
+        end
       end
     end
 
     # Methods tagged with handle_asynchronously
-    def generate_signature_for_performable_method
-      if payload_object.object.respond_to?(:id) and payload_object.object.id.present?
-        sig = "#{payload_object.object.class}:#{payload_object.object.id}"
-      else
-        sig = "#{payload_object.object}"
-      end
-      sig += "##{payload_object.method_name}"
-      sig
+    def denormalized_data_for_performable_method
+      {
+        object: payload_object.object.to_global_id.to_s,
+        method_name: payload_object.method_name,
+        args: stringify_arguments(payload_object.args)
+      }
     end
 
-    # # Regular Job
-    # def generate_signature_for_job_wrapper
-    #   sig = "#{payload_object.job_data["job_class"]}"
-    #   payload_object.job_data["arguments"].each do |job_arg|
-    #     string_job_arg = job_arg.is_a?(String) ? job_arg : job_arg.to_json
-    #   end
-    #   sig += "#{payload_object.job_data["job_class"]}"
-    #   sig
-    # end
-
-    def generate_signature_random
-      SecureRandom.uuid
+    # Regular Job
+    def denormalized_data_for_job_wrapper
+      {
+        job_class: payload_object.job_data["job_class"],
+        args: stringify_arguments(payload_object.job_data["arguments"])
+      }
     end
 
-    def generate_signature_failed
-      puts "DelayedDuplicatePreventionPlugin could not generate the signature correctly."
+    def stringify_arguments(arguments)
+      serialize_arguments(arguments).join('|')
     end
 
-    def get_args
-      self.payload_object.respond_to?(:args) ? self.payload_object.args : []
+    def serialize_arguments(arguments)
+      arguments.map { |arg|
+        arg.is_a?(ActiveRecord::Base) ? arg.to_global_id.to_s : arg.to_json
+      }
     end
 
     def prevent_duplicate
