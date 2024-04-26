@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
+require "delayed_job"
+
+require_relative "delayed_job_prevent_duplicate/signature_concern"
 require_relative "delayed_job_prevent_duplicate/version"
 
 module DelayedJobPreventDuplicate
   class Error < StandardError; end
- 
-  require 'delayed_duplicate_prevention_plugin'
 
-  Delayed::Backend::ActiveRecord::Job.send(:include, DelayedDuplicatePreventionPlugin::SignatureConcern)
-  Delayed::Worker.plugins << DelayedDuplicatePreventionPlugin
+  Delayed::Backend::ActiveRecord::Job.send(:include, SignatureConcern)
 end
