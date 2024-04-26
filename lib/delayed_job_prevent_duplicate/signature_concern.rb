@@ -24,7 +24,7 @@ module DelayedJobPreventDuplicate
       end
     end
 
-    def self.random_signature
+    def random_signature
       SecureRandom.uuid
     end
 
