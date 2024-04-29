@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+class AddSignatureToDelayedJob < ActiveRecord::Migration[<%= ActiveRecord::Migration.current_version %>]
+  def change
+    add_column :delayed_jobs, :signature, :string
+  end
+end
